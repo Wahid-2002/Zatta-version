@@ -157,13 +157,6 @@ with app.app_context():
         print(f"❌ Database setup error: {e}")
 
 # Routes
-@app.route('/')
-def index():
-    try:
-        return send_from_directory(app.static_folder, 'index.html')
-    except FileNotFoundError:
-        return "Working... (index.html not found)"
-
 @app.route('/health')
 def health_check():
     return jsonify({'status': 'healthy'})
@@ -523,11 +516,12 @@ def delete_generated_song(song_id):
         return jsonify({'success': False, 'error': str(e)}), 500
 
 # Catch-all route for frontend routing
+@app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
 def serve(path):
-    try:
+    if path != "" and os.path.exists(os.path.join(app.static_folder, path)):
         return send_from_directory(app.static_folder, path)
-    except FileNotFoundError:
+    else:
         return send_from_directory(app.static_folder, 'index.html')
 
 if __name__ == '__main__':
