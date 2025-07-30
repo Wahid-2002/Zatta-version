@@ -156,14 +156,25 @@ with app.app_context():
     except Exception as e:
         print(f"❌ Database setup error: {e}")
 
-# Basic routes
+# Routes
 @app.route('/')
 def index():
-    return send_from_directory(app.static_folder, 'index.html')
+    try:
+        return send_from_directory(app.static_folder, 'index.html')
+    except FileNotFoundError:
+        return "Arabic Music AI is running! (index.html not found)"
 
 @app.route('/health')
 def health_check():
     return jsonify({'status': 'healthy'})
+
+# Catch-all route for frontend routing
+@app.route('/<path:path>')
+def serve(path):
+    try:
+        return send_from_directory(app.static_folder, path)
+    except FileNotFoundError:
+        return send_from_directory(app.static_folder, 'index.html')
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
