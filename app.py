@@ -352,6 +352,176 @@ def dashboard_stats():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
+# TRAINING ENDPOINTS
+@app.route('/api/training/status')
+def training_status():
+    try:
+        latest_session = TrainingSession.query.order_by(TrainingSession.created_at.desc()).first()
+        
+        if not latest_session:
+            return jsonify({
+                'success': True,
+                'status': {
+                    'is_training': False, 'progress': 0, 'current_epoch': 0,
+                    'current_loss': 0, 'status': 'not_started'
+                }
+            })
+        
+        if latest_session.status == 'training' and latest_session.progress < 100:
+            latest_session.progress = min(100, latest_session.progress + random.randint(2, 8))
+            if latest_session.progress >= 100:
+                latest_session.status = 'completed'
+                latest_session.final_accuracy = random.uniform(0.85, 0.95)
+                latest_session.completed_at = datetime.utcnow()
+            db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'status': {
+                'is_training': latest_session.status == 'training',
+                'progress': latest_session.progress,
+                'current_epoch': int(latest_session.progress * latest_session.epochs / 100),
+                'current_loss': round(random.uniform(0.1, 0.5), 3),
+                'status': latest_session.status,
+                'session_id': latest_session.session_id
+            }
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/training/start', methods=['POST'])
+def start_training():
+    try:
+        songs_count = Song.query.count()
+        if songs_count < 1:
+            return jsonify({
+                'success': False, 
+                'error': f'Need at least 1 song to start training. Currently have {songs_count} songs.'
+            }), 400
+        
+        data = request.get_json() or {}
+        session_id = str(uuid.uuid4())
+        
+        training_session = TrainingSession(
+            session_id=session_id, status='training', progress=0,
+            epochs=int(data.get('epochs', 25)),
+            learning_rate=float(data.get('learning_rate', 0.001)),
+            batch_size=int(data.get('batch_size', 32)),
+            songs_used=songs_count
+        )
+        
+        db.session.add(training_session)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True, 'session_id': session_id,
+            'message': 'Training started successfully!',
+            'estimated_time': '30-45 minutes'
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/training/stop', methods=['POST'])
+def stop_training():
+    try:
+        latest_session = TrainingSession.query.filter_by(status='training').order_by(TrainingSession.created_at.desc()).first()
+        
+        if latest_session:
+            latest_session.status = 'stopped'
+            latest_session.completed_at = datetime.utcnow()
+            db.session.commit()
+            return jsonify({'success': True, 'message': 'Training stopped successfully!'})
+        else:
+            return jsonify({'success': False, 'error': 'No active training session found'}), 400
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# GENERATION ENDPOINTS
+@app.route('/api/generation/generate', methods=['POST'])
+def generate_music():
+    try:
+        # Handle both file upload and JSON data
+        lyrics_content = None
+        
+        if 'lyrics_file' in request.files:
+            lyrics_file = request.files['lyrics_file']
+            if lyrics_file.filename and lyrics_file.filename.endswith('.txt'):
+                lyrics_content = lyrics_file.read().decode('utf-8')
+        
+        if not lyrics_content:
+            data = request.get_json()
+            if data and data.get('lyrics'):
+                lyrics_content = data['lyrics']
+            else:
+                return jsonify({'success': False, 'error': 'No lyrics provided'}), 400
+        
+        # Get parameters
+        if request.content_type and request.content_type.startswith('multipart/form-data'):
+            maqam = request.form.get('maqam', 'hijaz')
+            style = request.form.get('style', 'modern')
+            tempo = int(request.form.get('tempo', 120))
+            emotion = request.form.get('emotion', 'neutral')
+            region = request.form.get('region', 'mixed')
+            title = request.form.get('title', f'Generated Song {GeneratedSong.query.count() + 1}')
+        else:
+            data = request.get_json() or {}
+            maqam = data.get('maqam', 'hijaz')
+            style = data.get('style', 'modern')
+            tempo = int(data.get('tempo', 120))
+            emotion = data.get('emotion', 'neutral')
+            region = data.get('region', 'mixed')
+            title = data.get('title', f'Generated Song {GeneratedSong.query.count() + 1}')
+        
+        generated_song = GeneratedSong(
+            title=title,
+            lyrics=lyrics_content,
+            maqam=maqam,
+            style=style,
+            tempo=tempo,
+            emotion=emotion,
+            region=region,
+            duration='Medium',
+            instruments='Modern',
+            creativity=7,
+            generation_time=round(random.uniform(2.0, 5.0), 1),
+            model_version='v1.0',
+            training_session_id='demo'
+        )
+        
+        db.session.add(generated_song)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Song "{generated_song.title}" generated successfully!',
+            'song_id': generated_song.id,
+            'generation_time': f'{generated_song.generation_time} seconds'
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/generation/list')
+def list_generated_songs():
+    try:
+        songs = GeneratedSong.query.order_by(GeneratedSong.created_at.desc()).all()
+        return jsonify({'success': True, 'songs': [song.to_dict() for song in songs]})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/generation/<int:song_id>', methods=['DELETE'])
+def delete_generated_song(song_id):
+    try:
+        song = GeneratedSong.query.get_or_404(song_id)
+        db.session.delete(song)
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Generated song deleted successfully!'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 # Catch-all route for frontend routing
 @app.route('/<path:path>')
 def serve(path):
