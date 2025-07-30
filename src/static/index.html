@@ -18,6 +18,7 @@
             border-radius: 10px;
             padding: 30px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
         }
         h1 {
             color: #2c3e50;
@@ -27,6 +28,110 @@
             padding: 10px;
             background-color: #e8f5e9;
             border-radius: 5px;
+        }
+        .button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        .button:hover {
+            background-color: #45a049;
+        }
+        .button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            text-align: left;
+        }
+        .section h2 {
+            color: #2c3e50;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+        .form-group {
+            margin: 10px 0;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-group input, .form-group textarea, .form-group select {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .error {
+            background-color: #ffebee;
+            color: #c62828;
+        }
+        .success {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+        }
+        .progress-bar {
+            width: 100%;
+            background-color: #f1f1f1;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .progress {
+            width: 0%;
+            height: 20px;
+            background-color: #4CAF50;
+            border-radius: 5px;
+            text-align: center;
+            line-height: 20px;
+            color: white;
+        }
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            background-color: #ddd;
+            border: 1px solid #ccc;
+            border-bottom: none;
+            border-radius: 5px 5px 0 0;
+            margin-right: 5px;
+        }
+        .tab.active {
+            background-color: white;
+            border-bottom: 1px solid white;
+            margin-bottom: -1px;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
         }
     </style>
 </head>
@@ -39,7 +144,110 @@
         </div>
     </div>
 
+    <div class="container">
+        <div class="tabs">
+            <div class="tab active" onclick="openTab(event, 'songs-tab')">Songs</div>
+            <div class="tab" onclick="openTab(event, 'training-tab')">Training</div>
+            <div class="tab" onclick="openTab(event, 'generation-tab')">Generation</div>
+        </div>
+
+        <div id="songs-tab" class="tab-content active">
+            <div class="section">
+                <h2>Song Management</h2>
+                <div class="form-group">
+                    <button class="button" onclick="listSongs()">List Songs</button>
+                </div>
+                <div id="songs-result" class="result"></div>
+            </div>
+        </div>
+
+        <div id="training-tab" class="tab-content">
+            <div class="section">
+                <h2>Model Training</h2>
+                <div class="form-group">
+                    <button class="button" id="start-training-btn" onclick="startTraining()">Start Training</button>
+                    <button class="button" id="stop-training-btn" onclick="stopTraining()" disabled>Stop Training</button>
+                </div>
+                <div class="progress-bar">
+                    <div id="training-progress" class="progress">0%</div>
+                </div>
+                <div id="training-status" class="result"></div>
+            </div>
+        </div>
+
+        <div id="generation-tab" class="tab-content">
+            <div class="section">
+                <h2>Music Generation</h2>
+                <div class="form-group">
+                    <label for="lyrics">Lyrics:</label>
+                    <textarea id="lyrics" rows="4" placeholder="Enter lyrics here..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="maqam">Maqam:</label>
+                    <select id="maqam">
+                        <option value="hijaz">Hijaz</option>
+                        <option value="rast">Rast</option>
+                        <option value="bayati">Bayati</option>
+                        <option value="saba">Saba</option>
+                        <option value="nakriz">Nakriz</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="style">Style:</label>
+                    <select id="style">
+                        <option value="classical">Classical</option>
+                        <option value="modern">Modern</option>
+                        <option value="folk">Folk</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="tempo">Tempo:</label>
+                    <input type="number" id="tempo" value="120" min="60" max="200">
+                </div>
+                <div class="form-group">
+                    <label for="emotion">Emotion:</label>
+                    <select id="emotion">
+                        <option value="romantic">Romantic</option>
+                        <option value="happy">Happy</option>
+                        <option value="sad">Sad</option>
+                        <option value="neutral">Neutral</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="region">Region:</label>
+                    <select id="region">
+                        <option value="egyptian">Egyptian</option>
+                        <option value="levantine">Levantine</option>
+                        <option value="gulf">Gulf</option>
+                        <option value="maghrebi">Maghrebi</option>
+                        <option value="mixed">Mixed</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <button class="button" onclick="generateMusic()">Generate Music</button>
+                    <button class="button" onclick="listGeneratedSongs()">List Generated Songs</button>
+                </div>
+                <div id="generation-result" class="result"></div>
+            </div>
+        </div>
+    </div>
+
     <script>
+        // Tab functionality
+        function openTab(evt, tabName) {
+            var i, tabcontent, tabs;
+            tabcontent = document.getElementsByClassName("tab-content");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].classList.remove("active");
+            }
+            tabs = document.getElementsByClassName("tab");
+            for (i = 0; i < tabs.length; i++) {
+                tabs[i].classList.remove("active");
+            }
+            document.getElementById(tabName).classList.add("active");
+            evt.currentTarget.classList.add("active");
+        }
+
         // Check system health
         fetch('/health')
             .then(response => response.json())
@@ -51,6 +259,225 @@
                 document.getElementById('status').textContent = 
                     'Error connecting to server';
             });
+
+        // Song functions
+        function listSongs() {
+            const resultDiv = document.getElementById('songs-result');
+            resultDiv.textContent = 'Loading...';
+            
+            fetch('/api/songs/list')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        resultDiv.textContent = JSON.stringify(data, null, 2);
+                        resultDiv.classList.remove('error');
+                        resultDiv.classList.add('success');
+                    } else {
+                        resultDiv.textContent = `Error: ${data.error}`;
+                        resultDiv.classList.remove('success');
+                        resultDiv.classList.add('error');
+                    }
+                })
+                .catch(error => {
+                    resultDiv.textContent = `Error: ${error}`;
+                    resultDiv.classList.remove('success');
+                    resultDiv.classList.add('error');
+                });
+        }
+
+        // Training functions
+        let trainingInterval;
+
+        function startTraining() {
+            const resultDiv = document.getElementById('training-status');
+            const startBtn = document.getElementById('start-training-btn');
+            const stopBtn = document.getElementById('stop-training-btn');
+            
+            startBtn.disabled = true;
+            stopBtn.disabled = false;
+            
+            resultDiv.textContent = 'Starting training...';
+            
+            fetch('/api/training/start', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({})
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    resultDiv.textContent = JSON.stringify(data, null, 2);
+                    resultDiv.classList.remove('error');
+                    resultDiv.classList.add('success');
+                    
+                    // Start checking training status
+                    trainingInterval = setInterval(checkTrainingStatus, 1000);
+                } else {
+                    resultDiv.textContent = `Error: ${data.error}`;
+                    resultDiv.classList.remove('success');
+                    resultDiv.classList.add('error');
+                    startBtn.disabled = false;
+                    stopBtn.disabled = true;
+                }
+            })
+            .catch(error => {
+                resultDiv.textContent = `Error: ${error}`;
+                resultDiv.classList.remove('success');
+                resultDiv.classList.add('error');
+                startBtn.disabled = false;
+                stopBtn.disabled = true;
+            });
+        }
+
+        function stopTraining() {
+            const resultDiv = document.getElementById('training-status');
+            const startBtn = document.getElementById('start-training-btn');
+            const stopBtn = document.getElementById('stop-training-btn');
+            
+            stopBtn.disabled = true;
+            
+            fetch('/api/training/stop', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    resultDiv.textContent = JSON.stringify(data, null, 2);
+                    resultDiv.classList.remove('error');
+                    resultDiv.classList.add('success');
+                    
+                    // Stop checking training status
+                    clearInterval(trainingInterval);
+                    
+                    startBtn.disabled = false;
+                } else {
+                    resultDiv.textContent = `Error: ${data.error}`;
+                    resultDiv.classList.remove('success');
+                    resultDiv.classList.add('error');
+                    stopBtn.disabled = false;
+                }
+            })
+            .catch(error => {
+                resultDiv.textContent = `Error: ${error}`;
+                resultDiv.classList.remove('success');
+                resultDiv.classList.add('error');
+                stopBtn.disabled = false;
+            });
+        }
+
+        function checkTrainingStatus() {
+            const progressBar = document.getElementById('training-progress');
+            const resultDiv = document.getElementById('training-status');
+            const startBtn = document.getElementById('start-training-btn');
+            const stopBtn = document.getElementById('stop-training-btn');
+            
+            fetch('/api/training/status')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const status = data.status;
+                        progressBar.style.width = `${status.progress}%`;
+                        progressBar.textContent = `${status.progress}%`;
+                        
+                        if (status.status === 'completed' || status.status === 'stopped') {
+                            clearInterval(trainingInterval);
+                            startBtn.disabled = false;
+                            stopBtn.disabled = true;
+                        }
+                        
+                        resultDiv.textContent = JSON.stringify(data, null, 2);
+                        resultDiv.classList.remove('error');
+                        resultDiv.classList.add('success');
+                    } else {
+                        resultDiv.textContent = `Error: ${data.error}`;
+                        resultDiv.classList.remove('success');
+                        resultDiv.classList.add('error');
+                    }
+                })
+                .catch(error => {
+                    resultDiv.textContent = `Error: ${error}`;
+                    resultDiv.classList.remove('success');
+                    resultDiv.classList.add('error');
+                });
+        }
+
+        // Generation functions
+        function generateMusic() {
+            const resultDiv = document.getElementById('generation-result');
+            const lyrics = document.getElementById('lyrics').value;
+            const maqam = document.getElementById('maqam').value;
+            const style = document.getElementById('style').value;
+            const tempo = document.getElementById('tempo').value;
+            const emotion = document.getElementById('emotion').value;
+            const region = document.getElementById('region').value;
+            
+            if (!lyrics) {
+                resultDiv.textContent = 'Error: Lyrics are required';
+                resultDiv.classList.remove('success');
+                resultDiv.classList.add('error');
+                return;
+            }
+            
+            resultDiv.textContent = 'Generating music...';
+            
+            fetch('/api/generation/generate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    lyrics: lyrics,
+                    maqam: maqam,
+                    style: style,
+                    tempo: parseInt(tempo),
+                    emotion: emotion,
+                    region: region
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    resultDiv.textContent = JSON.stringify(data, null, 2);
+                    resultDiv.classList.remove('error');
+                    resultDiv.classList.add('success');
+                } else {
+                    resultDiv.textContent = `Error: ${data.error}`;
+                    resultDiv.classList.remove('success');
+                    resultDiv.classList.add('error');
+                }
+            })
+            .catch(error => {
+                resultDiv.textContent = `Error: ${error}`;
+                resultDiv.classList.remove('success');
+                resultDiv.classList.add('error');
+            });
+        }
+
+        function listGeneratedSongs() {
+            const resultDiv = document.getElementById('generation-result');
+            resultDiv.textContent = 'Loading...';
+            
+            fetch('/api/generation/list')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        resultDiv.textContent = JSON.stringify(data, null, 2);
+                        resultDiv.classList.remove('error');
+                        resultDiv.classList.add('success');
+                    } else {
+                        resultDiv.textContent = `Error: ${data.error}`;
+                        resultDiv.classList.remove('success');
+                        resultDiv.classList.add('error');
+                    }
+                })
+                .catch(error => {
+                    resultDiv.textContent = `Error: ${error}`;
+                    resultDiv.classList.remove('success');
+                    resultDiv.classList.add('error');
+                });
+        }
     </script>
 </body>
 </html>
