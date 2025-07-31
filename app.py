@@ -128,11 +128,32 @@ class GeneratedSong(db.Model):
             'created_at': self.created_at.isoformat() if self.created_at else None
         }
 
+# Function to check and add the audio_data column if it doesn't exist
+def add_audio_data_column():
+    try:
+        # Check if the column exists
+        inspector = db.inspect(db.engine)
+        columns = [column['name'] for column in inspector.get_columns('songs')]
+        
+        if 'audio_data' not in columns:
+            print("Adding audio_data column to songs table...")
+            with db.engine.connect() as conn:
+                conn.execute(db.text("ALTER TABLE songs ADD COLUMN audio_data BYTEA"))
+                conn.commit()
+            print("✅ audio_data column added successfully!")
+        else:
+            print("✅ audio_data column already exists")
+    except Exception as e:
+        print(f"❌ Error adding audio_data column: {e}")
+
 # Create tables and add sample data
 with app.app_context():
     try:
         db.create_all()
         print("✅ Database tables created successfully!")
+        
+        # Add the audio_data column if it doesn't exist
+        add_audio_data_column()
         
         # Add sample song if database is empty
         if Song.query.count() == 0:
