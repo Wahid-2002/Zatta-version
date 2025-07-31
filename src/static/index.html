@@ -61,6 +61,12 @@
         .button-danger:hover {
             background-color: #d32f2f;
         }
+        .button-info {
+            background-color: #17a2b8;
+        }
+        .button-info:hover {
+            background-color: #138496;
+        }
         .section {
             margin: 20px 0;
             padding: 15px;
@@ -244,6 +250,7 @@
         .song-table .actions {
             display: flex;
             gap: 10px;
+            flex-wrap: wrap;
         }
         .song-table .actions button {
             padding: 6px 12px;
@@ -859,6 +866,12 @@
                                 <td>${song.emotion}</td>
                                 <td>${song.region}</td>
                                 <td class="actions">
+                                    <button class="button button-info" onclick="downloadAudio(${song.id})" title="Download Audio">
+                                        <i class="fas fa-music"></i>
+                                    </button>
+                                    <button class="button button-info" onclick="downloadLyrics(${song.id})" title="Download Lyrics">
+                                        <i class="fas fa-file-alt"></i>
+                                    </button>
                                     <button class="button button-secondary" onclick="editSong(${song.id})">Edit</button>
                                     <button class="button button-danger" onclick="deleteSong(${song.id})">Delete</button>
                                 </td>
@@ -873,6 +886,14 @@
                     console.error('Error loading song library:', error);
                     showNotification('Failed to load song library', 'error');
                 });
+        }
+
+        function downloadAudio(songId) {
+            window.open(`/api/songs/${songId}/download_audio`, '_blank');
+        }
+
+        function downloadLyrics(songId) {
+            window.open(`/api/songs/${songId}/download_lyrics`, '_blank');
         }
 
         function editSong(songId) {
