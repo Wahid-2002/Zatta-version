@@ -133,27 +133,6 @@
         .tab-content.active {
             display: block;
         }
-        .file-input {
-            margin-bottom: 10px;
-        }
-        .file-input input[type="file"] {
-            display: none;
-        }
-        .file-input label {
-            display: inline-block;
-            background-color: #f8f9fa;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            padding: 8px 12px;
-            cursor: pointer;
-        }
-        .file-input label:hover {
-            background-color: #e9ecef;
-        }
-        .file-name {
-            margin-left: 10px;
-            font-style: italic;
-        }
         .two-column {
             display: flex;
             gap: 20px;
@@ -161,7 +140,74 @@
         .two-column .column {
             flex: 1;
         }
+        
+        /* Drag and Drop Styles */
+        .drop-zone {
+            border: 2px dashed #ccc;
+            border-radius: 5px;
+            padding: 25px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 10px;
+            background-color: #f9f9f9;
+        }
+        .drop-zone:hover {
+            border-color: #4CAF50;
+            background-color: #f0f8f0;
+        }
+        .drop-zone.dragover {
+            border-color: #4CAF50;
+            background-color: #e8f5e9;
+        }
+        .drop-zone i {
+            font-size: 48px;
+            color: #aaa;
+            margin-bottom: 15px;
+        }
+        .drop-zone p {
+            margin: 5px 0;
+            color: #666;
+        }
+        .drop-zone .file-types {
+            font-size: 12px;
+            color: #999;
+            margin-top: 10px;
+        }
+        .file-input {
+            display: none;
+        }
+        .file-preview {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #f0f0f0;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .file-preview .file-name {
+            font-weight: bold;
+            color: #333;
+        }
+        .file-preview .file-size {
+            color: #666;
+            font-size: 14px;
+        }
+        .file-preview .remove-file {
+            background-color: #f44336;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            font-size: 16px;
+            line-height: 24px;
+            text-align: center;
+        }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
 </head>
 <body>
     <div class="container">
@@ -257,20 +303,42 @@
                                     <option value="Hazg">Hazg</option>
                                 </select>
                             </div>
+                            
+                            <!-- Audio File Drop Zone -->
                             <div class="form-group">
                                 <label>Audio File *</label>
-                                <div class="file-input">
-                                    <label for="audio_file">Choose Audio File</label>
-                                    <input type="file" id="audio_file" name="audio_file" accept=".mp3,.wav,.flac,.m4a" required>
-                                    <span class="file-name" id="audio-file-name">No file chosen</span>
+                                <div class="drop-zone" id="audio-drop-zone">
+                                    <i class="fas fa-music"></i>
+                                    <p>Drag & drop your audio file here</p>
+                                    <p>or click to browse</p>
+                                    <div class="file-types">Supported formats: MP3, WAV, FLAC, M4A</div>
+                                </div>
+                                <input type="file" id="audio_file" name="audio_file" class="file-input" accept=".mp3,.wav,.flac,.m4a" required>
+                                <div id="audio-preview" class="file-preview" style="display: none;">
+                                    <div>
+                                        <div class="file-name" id="audio-file-name"></div>
+                                        <div class="file-size" id="audio-file-size"></div>
+                                    </div>
+                                    <button type="button" class="remove-file" id="remove-audio">×</button>
                                 </div>
                             </div>
+                            
+                            <!-- Lyrics File Drop Zone -->
                             <div class="form-group">
                                 <label>Lyrics File *</label>
-                                <div class="file-input">
-                                    <label for="lyrics_file">Choose Lyrics File</label>
-                                    <input type="file" id="lyrics_file" name="lyrics_file" accept=".txt" required>
-                                    <span class="file-name" id="lyrics-file-name">No file chosen</span>
+                                <div class="drop-zone" id="lyrics-drop-zone">
+                                    <i class="fas fa-file-alt"></i>
+                                    <p>Drag & drop your lyrics file here</p>
+                                    <p>or click to browse</p>
+                                    <div class="file-types">Supported format: TXT</div>
+                                </div>
+                                <input type="file" id="lyrics_file" name="lyrics_file" class="file-input" accept=".txt" required>
+                                <div id="lyrics-preview" class="file-preview" style="display: none;">
+                                    <div>
+                                        <div class="file-name" id="lyrics-file-name"></div>
+                                        <div class="file-size" id="lyrics-file-size"></div>
+                                    </div>
+                                    <button type="button" class="remove-file" id="remove-lyrics">×</button>
                                 </div>
                             </div>
                         </div>
@@ -395,14 +463,112 @@
                     'Error connecting to server';
             });
 
-        // File input display
-        document.getElementById('audio_file').addEventListener('change', function() {
-            document.getElementById('audio-file-name').textContent = this.files[0] ? this.files[0].name : 'No file chosen';
-        });
+        // Drag and Drop functionality
+        function setupDragAndDrop(dropZoneId, fileInputId, previewId, fileNameId, fileSizeId, removeBtnId) {
+            const dropZone = document.getElementById(dropZoneId);
+            const fileInput = document.getElementById(fileInputId);
+            const preview = document.getElementById(previewId);
+            const fileName = document.getElementById(fileNameId);
+            const fileSize = document.getElementById(fileSizeId);
+            const removeBtn = document.getElementById(removeBtnId);
 
-        document.getElementById('lyrics_file').addEventListener('change', function() {
-            document.getElementById('lyrics-file-name').textContent = this.files[0] ? this.files[0].name : 'No file chosen';
-        });
+            // Prevent default drag behaviors
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, preventDefaults, false);
+                document.body.addEventListener(eventName, preventDefaults, false);
+            });
+
+            // Highlight drop zone when item is dragged over it
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, highlight, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, unhighlight, false);
+            });
+
+            // Handle dropped files
+            dropZone.addEventListener('drop', handleDrop, false);
+
+            // Handle click to browse files
+            dropZone.addEventListener('click', () => {
+                fileInput.click();
+            });
+
+            // Handle file selection
+            fileInput.addEventListener('change', handleFileSelect, false);
+
+            // Handle remove file
+            removeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                fileInput.value = '';
+                preview.style.display = 'none';
+            });
+
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
+            function highlight() {
+                dropZone.classList.add('dragover');
+            }
+
+            function unhighlight() {
+                dropZone.classList.remove('dragover');
+            }
+
+            function handleDrop(e) {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                
+                if (files.length) {
+                    fileInput.files = files;
+                    handleFiles(files);
+                }
+            }
+
+            function handleFileSelect() {
+                handleFiles(fileInput.files);
+            }
+
+            function handleFiles(files) {
+                if (files.length) {
+                    const file = files[0];
+                    fileName.textContent = file.name;
+                    fileSize.textContent = formatFileSize(file.size);
+                    preview.style.display = 'flex';
+                }
+            }
+
+            function formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+        }
+
+        // Initialize drag and drop for audio file
+        setupDragAndDrop(
+            'audio-drop-zone', 
+            'audio_file', 
+            'audio-preview', 
+            'audio-file-name', 
+            'audio-file-size', 
+            'remove-audio'
+        );
+
+        // Initialize drag and drop for lyrics file
+        setupDragAndDrop(
+            'lyrics-drop-zone', 
+            'lyrics_file', 
+            'lyrics-preview', 
+            'lyrics-file-name', 
+            'lyrics-file-size', 
+            'remove-lyrics'
+        );
 
         // Upload form submission
         document.getElementById('upload-form').addEventListener('submit', function(e) {
@@ -427,8 +593,8 @@
                     
                     // Reset form
                     this.reset();
-                    document.getElementById('audio-file-name').textContent = 'No file chosen';
-                    document.getElementById('lyrics-file-name').textContent = 'No file chosen';
+                    document.getElementById('audio-preview').style.display = 'none';
+                    document.getElementById('lyrics-preview').style.display = 'none';
                 } else {
                     resultDiv.textContent = `Error: ${data.error}`;
                     resultDiv.classList.remove('success');
