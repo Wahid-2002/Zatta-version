@@ -300,6 +300,38 @@ def list_songs():
         print(f"❌ List songs error: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
+# UPDATE SONG ENDPOINT
+@app.route('/api/songs/<int:song_id>', methods=['PUT'])
+def update_song(song_id):
+    try:
+        song = Song.query.get_or_404(song_id)
+        data = request.get_json()
+        
+        # Update fields
+        song.title = data.get('title', song.title)
+        song.artist = data.get('artist', song.artist)
+        song.lyrics = data.get('lyrics', song.lyrics)
+        song.maqam = data.get('maqam', song.maqam)
+        song.style = data.get('style', song.style)
+        song.tempo = int(data.get('tempo', song.tempo))
+        song.emotion = data.get('emotion', song.emotion)
+        song.region = data.get('region', song.region)
+        song.composer = data.get('composer', song.composer)
+        song.poem_bahr = data.get('poem_bahr', song.poem_bahr)
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Song "{song.title}" updated successfully!',
+            'song_id': song.id
+        })
+        
+    except Exception as e:
+        print(f"❌ Update song error: {e}")
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 # DELETE SONG ENDPOINT
 @app.route('/api/songs/<int:song_id>', methods=['DELETE'])
 def delete_song(song_id):
