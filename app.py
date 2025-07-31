@@ -1,6 +1,6 @@
 import os
 import sys
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory, send_file
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.utils import secure_filename
@@ -9,6 +9,7 @@ import json
 import uuid
 import time
 import random
+import io
 
 # Create Flask app
 app = Flask(__name__, static_folder='src/static', static_url_path='/')
@@ -49,6 +50,7 @@ class Song(db.Model):
     filename = db.Column(db.String(255))
     file_size = db.Column(db.Integer)
     file_type = db.Column(db.String(10))
+    audio_data = db.Column(db.LargeBinary)  # Store actual audio file data
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     def to_dict(self):
@@ -147,7 +149,8 @@ with app.app_context():
                 poem_bahr="baseet",
                 filename="sample.mp3",
                 file_size=5242880,  # 5MB
-                file_type="mp3"
+                file_type="mp3",
+                audio_data=None  # No actual audio data for sample
             )
             db.session.add(sample_song)
             db.session.commit()
@@ -243,6 +246,7 @@ def upload_song():
             filename=filename,
             file_size=file_size,
             file_type=filename.split('.')[-1] if '.' in filename else 'mp3',
+            audio_data=audio_data,  # Store the actual audio file data
             created_at=datetime.utcnow()
         )
         
@@ -338,6 +342,54 @@ def delete_song(song_id):
         return jsonify({'success': True, 'message': 'Song deleted successfully!'})
     except Exception as e:
         db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# DOWNLOAD AUDIO ENDPOINT
+@app.route('/api/songs/<int:song_id>/download_audio')
+def download_audio(song_id):
+    try:
+        song = Song.query.get_or_404(song_id)
+        
+        if not song.audio_data:
+            return jsonify({'success': False, 'error': 'Audio file not found'}), 404
+        
+        # Create a file-like object from the binary data
+        audio_file = io.BytesIO(song.audio_data)
+        
+        return send_file(
+            audio_file,
+            as_attachment=True,
+            download_name=song.filename,
+            mimetype=f'audio/{song.file_type}'
+        )
+        
+    except Exception as e:
+        print(f"❌ Download audio error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# DOWNLOAD LYRICS ENDPOINT
+@app.route('/api/songs/<int:song_id>/download_lyrics')
+def download_lyrics(song_id):
+    try:
+        song = Song.query.get_or_404(song_id)
+        
+        if not song.lyrics:
+            return jsonify({'success': False, 'error': 'Lyrics not found'}), 404
+        
+        # Create a text file from the lyrics
+        lyrics_file = io.BytesIO()
+        lyrics_file.write(song.lyrics.encode('utf-8'))
+        lyrics_file.seek(0)
+        
+        return send_file(
+            lyrics_file,
+            as_attachment=True,
+            download_name=f"{song.title}_lyrics.txt",
+            mimetype='text/plain'
+        )
+        
+    except Exception as e:
+        print(f"❌ Download lyrics error: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 # DASHBOARD STATS ENDPOINT
