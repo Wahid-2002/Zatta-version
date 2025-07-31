@@ -37,11 +37,11 @@ class Song(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
-    artist = db.Column(db.String(200), nullable=False)
+    artist = db.Column(db.String(200), nullable=False)  # Kept for compatibility
     lyrics = db.Column(db.Text, nullable=False)
     maqam = db.Column(db.String(50), nullable=False)
     style = db.Column(db.String(50), nullable=False)
-    tempo = db.Column(db.Integer, nullable=False)
+    tempo = db.Column(db.Integer, nullable=False)  # Kept for compatibility
     emotion = db.Column(db.String(50), nullable=False)
     region = db.Column(db.String(50), nullable=False)
     composer = db.Column(db.String(200))
@@ -55,11 +55,11 @@ class Song(db.Model):
         return {
             'id': self.id,
             'title': self.title,
-            'artist': self.artist,
+            'artist': self.artist,  # Kept for compatibility
             'lyrics': self.lyrics,
             'maqam': self.maqam,
             'style': self.style,
-            'tempo': self.tempo,
+            'tempo': self.tempo,  # Kept for compatibility
             'emotion': self.emotion,
             'region': self.region,
             'composer': self.composer,
@@ -136,11 +136,11 @@ with app.app_context():
         if Song.query.count() == 0:
             sample_song = Song(
                 title="Sample Arabic Song",
-                artist="Test Artist",
+                artist="Test Artist",  # Kept for compatibility
                 lyrics="هذه أغنية تجريبية\nبكلمات عربية جميلة\nللاختبار والتجربة",
                 maqam="hijaz",
                 style="classical",
-                tempo=120,
+                tempo=120,  # Kept for compatibility
                 emotion="romantic",
                 region="egyptian",
                 composer="Test Composer",
@@ -203,27 +203,23 @@ def upload_song():
         
         # Get form data
         title = request.form.get('title', '').strip()
-        artist = request.form.get('artist', '').strip()
+        composer = request.form.get('composer', '').strip()
         maqam = request.form.get('maqam', '').strip()
         style = request.form.get('style', '').strip()
-        tempo = request.form.get('tempo', '').strip()
         emotion = request.form.get('emotion', '').strip()
         region = request.form.get('region', '').strip()
-        composer = request.form.get('composer', '').strip()
         poem_bahr = request.form.get('poem_bahr', '').strip()
         
-        print(f"Form data - Title: '{title}', Artist: '{artist}', Maqam: '{maqam}'")
+        print(f"Form data - Title: '{title}', Composer: '{composer}', Maqam: '{maqam}'")
         
         # Basic validation
-        if not title or not artist:
-            print("❌ Missing title or artist")
-            return jsonify({'success': False, 'error': 'Title and Artist are required'}), 400
+        if not title:
+            print("❌ Missing title")
+            return jsonify({'success': False, 'error': 'Title is required'}), 400
         
-        # Convert tempo
-        try:
-            tempo_int = int(tempo) if tempo else 120
-        except:
-            tempo_int = 120
+        # Set default values for removed fields
+        artist = "Unknown Artist"  # Default since we removed the field
+        tempo = 120  # Default since we removed the field
         
         # Get file info
         audio_data = audio_file.read()
@@ -235,11 +231,11 @@ def upload_song():
         # Create song
         song = Song(
             title=title,
-            artist=artist,
+            artist=artist,  # Default value
             lyrics=lyrics_content,
             maqam=maqam or 'unknown',
             style=style or 'modern',
-            tempo=tempo_int,
+            tempo=tempo,  # Default value
             emotion=emotion or 'neutral',
             region=region or 'mixed',
             composer=composer,
@@ -289,7 +285,7 @@ def list_songs():
         for song in songs:
             song_dict = song.to_dict()
             songs_data.append(song_dict)
-            print(f"Song: {song_dict['title']} by {song_dict['artist']}")
+            print(f"Song: {song_dict['title']} by {song_dict['composer']}")
         
         return jsonify({
             'success': True,
@@ -309,11 +305,11 @@ def update_song(song_id):
         
         # Update fields
         song.title = data.get('title', song.title)
-        song.artist = data.get('artist', song.artist)
+        # Keep artist as is (not updated)
         song.lyrics = data.get('lyrics', song.lyrics)
         song.maqam = data.get('maqam', song.maqam)
         song.style = data.get('style', song.style)
-        song.tempo = int(data.get('tempo', song.tempo))
+        # Keep tempo as is (not updated)
         song.emotion = data.get('emotion', song.emotion)
         song.region = data.get('region', song.region)
         song.composer = data.get('composer', song.composer)
@@ -486,7 +482,6 @@ def generate_music():
         if request.content_type and request.content_type.startswith('multipart/form-data'):
             maqam = request.form.get('maqam', 'hijaz')
             style = request.form.get('style', 'modern')
-            tempo = int(request.form.get('tempo', 120))
             emotion = request.form.get('emotion', 'neutral')
             region = request.form.get('region', 'mixed')
             title = request.form.get('title', f'Generated Song {GeneratedSong.query.count() + 1}')
@@ -494,7 +489,6 @@ def generate_music():
             data = request.get_json() or {}
             maqam = data.get('maqam', 'hijaz')
             style = data.get('style', 'modern')
-            tempo = int(data.get('tempo', 120))
             emotion = data.get('emotion', 'neutral')
             region = data.get('region', 'mixed')
             title = data.get('title', f'Generated Song {GeneratedSong.query.count() + 1}')
@@ -504,7 +498,7 @@ def generate_music():
             lyrics=lyrics_content,
             maqam=maqam,
             style=style,
-            tempo=tempo,
+            tempo=120,  # Default tempo
             emotion=emotion,
             region=region,
             duration='Medium',
